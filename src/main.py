@@ -2,6 +2,11 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+try:
+    from .dependencies import get_dependencies
+except ImportError:
+    from dependencies import get_dependencies
+
 def load_config(config_path):
     """Загрузка и проверка XML-конфигурации."""
 
@@ -82,6 +87,19 @@ def main():
         print(f"Версия пакета: {config['package_version']}")
         print(f"Режим вывода: {config['output_mode']}")
         print(f"Максимальная глубина: {config['max_depth']}")
+        print("\n=== Прямые зависимости пакета ===")
+
+        dependencies = get_dependencies(
+            config["package_name"],
+            config["package_version"],
+            config["repository_url"]
+        )
+
+        if dependencies:
+            for dependency in dependencies:
+                print(f"- {dependency}")
+        else:
+            print("Прямые зависимости отсутствуют")
 
     except ValueError as error:
         print(f"Ошибка конфигурации: {error}")
