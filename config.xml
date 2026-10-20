@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <package_name>serde</package_name>
+    <repository_url>https://github.com/rust-lang/crates.io-index</repository_url>
+    <test_mode>true</test_mode>
+    <package_version>1.0.0</package_version>
+    <output_mode>ascii</output_mode>
+    <max_depth>3</max_depth>
+</config>
