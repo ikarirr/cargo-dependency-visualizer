@@ -7,41 +7,46 @@ def build_graph(
     package_version,
     repository_url,
     max_depth,
-    get_dependencies_func=None
+    dependency_provider=None
 ):
     """
-    Построение графа зависимостей пакета Cargo.
+    Построение графа зависимостей Cargo.
 
-    package_name — название исходного пакета.
-    package_version — версия исходного пакета.
-    repository_url — адрес репозитория.
-    max_depth — максимальная глубина анализа.
-    get_dependencies_func — функция получения зависимостей.
+    Используется алгоритм DFS без рекурсии.
+    Обход выполняется с помощью стека.
+
+    Args:
+        package_name: название исходного пакета.
+        package_version: версия исходного пакета.
+        repository_url: адрес репозитория.
+        max_depth: максимальная глубина обхода.
+        dependency_provider: функция получения зависимостей.
+
+    Returns:
+        dict: граф зависимостей.
     """
 
+    if not package_name:
+        raise ValueError("Название пакета не может быть пустым")
+
     if not isinstance(max_depth, int) or max_depth < 0:
-        raise ValueError(
-            "Максимальная глубина должна быть целым "
-            "неотрицательным числом"
-        )
+        raise ValueError("Глубина должна быть неотрицательным числом")
 
-    if not package_name or not package_version:
-        raise ValueError(
-            "Необходимо указать название и версию пакета"
-        )
-
-    if get_dependencies_func is None:
-        get_dependencies_func = get_dependencies
+    if dependency_provider is None:
+        dependency_provider = get_dependencies
 
     graph = {}
     visited = set()
 
-    queue = deque([
+    # Стек для обхода графа в глубину
+    stack = deque([
         (package_name, package_version, 0)
     ])
 
-    while queue:
-        current_package, current_version, depth = queue.popleft()
+    while stack:
+
+        # DFS: извлекаем последний добавленный элемент
+        current_package, current_version, depth = stack.pop()
 
         if current_package in visited:
             continue
@@ -50,28 +55,23 @@ def build_graph(
 
         graph.setdefault(current_package, [])
 
+        # Проверяем ограничение глубины
         if depth >= max_depth:
             continue
 
-        try:
-            if current_version is None:
-                current_version = get_latest_version(
-                    current_package,
-                    repository_url
-                )
-
-            dependencies = get_dependencies_func(
+        # Определяем версию пакета
+        if current_version is None:
+            current_version = get_latest_version(
                 current_package,
-                current_version,
                 repository_url
             )
 
-        except ValueError as error:
-            print(
-                f"Ошибка получения зависимостей "
-                f"пакета {current_package}: {error}"
-            )
-            continue
+        # Получаем зависимости
+        dependencies = dependency_provider(
+            current_package,
+            current_version,
+            repository_url
+        )
 
         for dependency in dependencies:
 
@@ -80,8 +80,11 @@ def build_graph(
 
             graph.setdefault(dependency, [])
 
+        # Добавляем зависимости в стек
+        for dependency in reversed(dependencies):
+
             if dependency not in visited:
-                queue.append(
+                stack.append(
                     (dependency, None, depth + 1)
                 )
 
