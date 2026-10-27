@@ -1,7 +1,7 @@
 import unittest
-from unittest.mock import patch
 
 from src.dependencies import get_dependencies
+
 
 class TestDependencies(unittest.TestCase):
 
@@ -17,6 +17,7 @@ class TestDependencies(unittest.TestCase):
         self.assertIsInstance(result, list)
 
         self.assertIn("serde_derive", result)
+
 
 if __name__ == "__main__":
     unittest.main()

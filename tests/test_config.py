@@ -5,6 +5,7 @@ from xml.sax.saxutils import escape
 
 from src.main import load_config
 
+
 class TestConfig(unittest.TestCase):
 
     def setUp(self):
@@ -118,6 +119,7 @@ class TestConfig(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.check_config(self.config)
+
 
 if __name__ == "__main__":
     unittest.main()

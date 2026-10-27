@@ -2,6 +2,7 @@ import unittest
 
 from src.graph import build_graph
 
+
 class TestGraph(unittest.TestCase):
 
     def setUp(self):
@@ -88,6 +89,7 @@ class TestGraph(unittest.TestCase):
                 -1,
                 self.mock_get_dependencies
             )
+
 
 if __name__ == "__main__":
     unittest.main()

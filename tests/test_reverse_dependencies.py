@@ -2,6 +2,7 @@ import unittest
 
 from src.reverse_dependencies import get_reverse_dependencies
 
+
 class TestReverseDependencies(unittest.TestCase):
 
     def test_direct_dependencies(self):
@@ -65,6 +66,7 @@ class TestReverseDependencies(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             get_reverse_dependencies(graph, "X")
+
 
 if __name__ == "__main__":
     unittest.main()
