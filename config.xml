@@ -4,6 +4,6 @@
     <repository_url>https://crates.io</repository_url>
     <test_mode>true</test_mode>
     <package_version>1.0.0</package_version>
-    <output_mode>ascii</output_mode>
+    <output_mode>graph</output_mode>
     <max_depth>3</max_depth>
 </config>
