@@ -1,91 +1,73 @@
+"""Построение графа зависимостей Cargo обходом DFS без рекурсии."""
+
 from collections import deque
 
-from src.dependencies import get_dependencies, get_latest_version
+try:
+    from .dependencies import get_dependencies, get_latest_version
+except ImportError:
+    from dependencies import get_dependencies, get_latest_version
+
+
+def _validate_graph_parameters(package_name, max_depth):
+    """Проверить название корневого пакета и глубину обхода."""
+    if not package_name:
+        raise ValueError("Название пакета не может быть пустым")
+    if not isinstance(max_depth, int) or max_depth < 0:
+        raise ValueError("Глубина должна быть неотрицательным числом")
+
+
+def _fetch_dependencies(package, version, repository_url, provider):
+    """Получить зависимости, определив версию при необходимости."""
+    if version is None:
+        version = get_latest_version(package, repository_url)
+    return provider(package, version, repository_url)
+
+
+def _add_graph_edges(graph, package, dependencies):
+    """Зарегистрировать узлы и связи без дублирования рёбер."""
+    for dependency in dependencies:
+        if dependency not in graph[package]:
+            graph[package].append(dependency)
+        graph.setdefault(dependency, [])
+
+
+def _push_unvisited(stack, dependencies, visited, depth):
+    """Добавить соседей в стек в порядке, сохраняющем порядок DFS."""
+    for dependency in reversed(dependencies):
+        if dependency not in visited:
+            stack.append((dependency, None, depth + 1))
+
 
 def build_graph(
     package_name,
     package_version,
     repository_url,
     max_depth,
-    dependency_provider=None
+    dependency_provider=None,
 ):
-    """
-    Построение графа зависимостей Cargo.
-
-    Используется алгоритм DFS без рекурсии.
-    Обход выполняется с помощью стека.
-
-    Args:
-        package_name: название исходного пакета.
-        package_version: версия исходного пакета.
-        repository_url: адрес репозитория.
-        max_depth: максимальная глубина обхода.
-        dependency_provider: функция получения зависимостей.
-
-    Returns:
-        dict: граф зависимостей.
-    """
-
-    if not package_name:
-        raise ValueError("Название пакета не может быть пустым")
-
-    if not isinstance(max_depth, int) or max_depth < 0:
-        raise ValueError("Глубина должна быть неотрицательным числом")
-
-    if dependency_provider is None:
-        dependency_provider = get_dependencies
-
+    """Построить граф до max_depth с помощью итеративного обхода DFS."""
+    _validate_graph_parameters(package_name, max_depth)
+    provider = dependency_provider
+    if provider is None:
+        provider = get_dependencies
     graph = {}
     visited = set()
-
-    # Стек для обхода графа в глубину
-    stack = deque([
-        (package_name, package_version, 0)
-    ])
+    stack = deque([(package_name, package_version, 0)])
 
     while stack:
-
-        # DFS: извлекаем последний добавленный элемент
-        current_package, current_version, depth = stack.pop()
-
-        if current_package in visited:
+        package, version, depth = stack.pop()
+        if package in visited:
             continue
 
-        visited.add(current_package)
-
-        graph.setdefault(current_package, [])
-
-        # Проверяем ограничение глубины
+        visited.add(package)
+        graph.setdefault(package, [])
         if depth >= max_depth:
             continue
 
-        # Определяем версию пакета
-        if current_version is None:
-            current_version = get_latest_version(
-                current_package,
-                repository_url
-            )
-
-        # Получаем зависимости
-        dependencies = dependency_provider(
-            current_package,
-            current_version,
-            repository_url
+        dependencies = _fetch_dependencies(
+            package, version, repository_url, provider
         )
-
-        for dependency in dependencies:
-
-            if dependency not in graph[current_package]:
-                graph[current_package].append(dependency)
-
-            graph.setdefault(dependency, [])
-
-        # Добавляем зависимости в стек
-        for dependency in reversed(dependencies):
-
-            if dependency not in visited:
-                stack.append(
-                    (dependency, None, depth + 1)
-                )
+        _add_graph_edges(graph, package, dependencies)
+        _push_unvisited(stack, dependencies, visited, depth)
 
     return graph
